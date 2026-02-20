@@ -1,0 +1,7 @@
+{
+  "api_id": 123456,
+  "api_hash": "your_telegram_api_hash",
+  "phone": "+79991234567",
+  "session_name": "my_telegram_session",
+  "max_history_messages": 20
+}

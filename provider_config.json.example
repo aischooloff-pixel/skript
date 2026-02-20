@@ -1,0 +1,9 @@
+{
+  "base_url": "https://openrouter.ai/api/v1",
+  "endpoint": "/chat/completions",
+  "api_key": "your_provider_api_key",
+  "model": "openai/gpt-4o-mini",
+  "temperature": 0.7,
+  "max_tokens": 350,
+  "timeout_sec": 60
+}
