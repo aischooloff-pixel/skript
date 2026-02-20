@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import json
 import logging
-import os
+import asyncio
 from pathlib import Path
 from typing import Any
 
@@ -134,7 +134,7 @@ def trim_history(history: list[dict[str, str]], max_messages: int) -> list[dict[
 
 
 
-def main() -> None:
+async def main() -> None:
     app_cfg = load_json(APP_CONFIG_PATH)
     provider_cfg = load_json(PROVIDER_CONFIG_PATH)
     knowledge = load_knowledge(KNOWLEDGE_PATH)
@@ -156,17 +156,17 @@ def main() -> None:
     client = TelegramClient(session_name, int(api_id), str(api_hash))
 
     logger.info("Запуск клиента Telegram...")
-    client.connect()
+    await client.connect()
 
-    if not client.is_user_authorized():
+    if not await client.is_user_authorized():
         logger.info("Нужна авторизация. Отправляем код на номер %s", phone)
-        client.send_code_request(phone)
+        await client.send_code_request(phone)
         code = input("Введите код из Telegram: ").strip()
         try:
-            client.sign_in(phone=phone, code=code)
+            await client.sign_in(phone=phone, code=code)
         except SessionPasswordNeededError:
             password = input("Введите облачный пароль (2FA): ").strip()
-            client.sign_in(password=password)
+            await client.sign_in(password=password)
 
     @client.on(events.NewMessage(incoming=True))
     async def on_message(event: events.NewMessage.Event) -> None:
@@ -201,12 +201,12 @@ def main() -> None:
         await event.reply(answer)
 
     logger.info("Скрипт активен. Ожидаю входящие ЛС... Ctrl+C для остановки.")
-    client.run_until_disconnected()
+    await client.run_until_disconnected()
 
 
 if __name__ == "__main__":
     try:
-        main()
+        asyncio.run(main())
     except ConfigError as exc:
         logger.error("Ошибка конфигурации: %s", exc)
     except KeyboardInterrupt:
