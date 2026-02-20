@@ -154,7 +154,7 @@ async def main() -> None:
     provider_cfg = load_json(PROVIDER_CONFIG_PATH)
     knowledge = load_knowledge(KNOWLEDGE_PATH)
     base_prompt = load_system_prompt(SYSTEM_PROMPT_PATH)
-    system_prompt = build_system_prompt(base_prompt, knowledge)
+    startup_system_prompt = build_system_prompt(base_prompt, knowledge)
 
     api_id = app_cfg.get("api_id")
     api_hash = app_cfg.get("api_hash")
@@ -202,8 +202,21 @@ async def main() -> None:
         chat_history = trim_history(chat_history, max_history_messages)
 
         try:
-            answer = call_llm(provider_cfg, system_prompt, text, chat_history)
-        except Exception as exc:  # noqa: BLE001
+            current_knowledge = load_knowledge(KNOWLEDGE_PATH)
+            current_base_prompt = load_system_prompt(SYSTEM_PROMPT_PATH)
+            current_system_prompt = build_system_prompt(
+                current_base_prompt,
+                current_knowledge,
+            )
+        except ConfigError:
+            logger.exception(
+                "Ошибка чтения baza.txt/system_prompt.txt. Использую промпт из старта."
+            )
+            current_system_prompt = startup_system_prompt
+
+        try:
+            answer = call_llm(provider_cfg, current_system_prompt, text, chat_history)
+        except Exception:  # noqa: BLE001
             logger.exception("Ошибка при обращении к LLM")
             await event.reply(
                 "Извини, сейчас не могу ответить (ошибка модели). Попробуй позже."
