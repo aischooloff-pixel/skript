@@ -20,6 +20,7 @@ BASE_DIR = Path(__file__).resolve().parent
 APP_CONFIG_PATH = BASE_DIR / "app_config.json"
 PROVIDER_CONFIG_PATH = BASE_DIR / "provider_config.json"
 KNOWLEDGE_PATH = BASE_DIR / "baza.txt"
+SYSTEM_PROMPT_PATH = BASE_DIR / "system_prompt.txt"
 DEFAULT_MODEL = "openai/gpt-4o-mini"
 
 
@@ -58,12 +59,26 @@ def load_knowledge(path: Path) -> str:
     return data
 
 
+def load_system_prompt(path: Path) -> str:
+    if not path.exists():
+        raise ConfigError(
+            f"Не найден файл {path.name}. Создайте его и добавьте системный промпт."
+        )
 
-def build_system_prompt(knowledge: str) -> str:
+    data = path.read_text(encoding="utf-8").strip()
+    if not data:
+        raise ConfigError(
+            f"Файл {path.name} пуст. Добавьте туда инструкции для стиля общения."
+        )
+    return data
+
+
+
+def build_system_prompt(base_prompt: str, knowledge: str) -> str:
     return (
-        "Ты пишешь ответы в личке Telegram от первого лица, как владелец аккаунта. "
-        "Никогда не называй себя ассистентом или ботом. "
-        "Отвечай естественно, в стиле реального человека, коротко и по делу. "
+        f"{base_prompt}\n\n"
+        "Дополнительные правила: пиши ответы в личке Telegram от первого лица, как "
+        "владелец аккаунта. Никогда не называй себя ассистентом или ботом. "
         "Если информации в базе недостаточно, мягко уточняй детали.\n\n"
         "БАЗА ЗНАНИЙ ВЛАДЕЛЬЦА АККАУНТА:\n"
         f"{knowledge}"
@@ -138,7 +153,8 @@ async def main() -> None:
     app_cfg = load_json(APP_CONFIG_PATH)
     provider_cfg = load_json(PROVIDER_CONFIG_PATH)
     knowledge = load_knowledge(KNOWLEDGE_PATH)
-    system_prompt = build_system_prompt(knowledge)
+    base_prompt = load_system_prompt(SYSTEM_PROMPT_PATH)
+    system_prompt = build_system_prompt(base_prompt, knowledge)
 
     api_id = app_cfg.get("api_id")
     api_hash = app_cfg.get("api_hash")
